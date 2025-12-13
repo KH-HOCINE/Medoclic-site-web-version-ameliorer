@@ -20,7 +20,7 @@ console.log("OWNER_EMAIL:", process.env.OWNER_EMAIL);
 app.use(
   cors({
     origin: [
-      "https://medoclic-dashboard.vercel.app", // <<< METTEZ CETTE URL EXACTE
+      "https://medoclic-frontend.vercel.app", // <<< METTEZ CETTE URL EXACTE
       // Si vous avez un domaine personnalisé comme 'https://medoclic.com', ajoutez-le aussi ici.
       "http://localhost:5173" // Pour les tests en local
     ],
