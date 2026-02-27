@@ -18,18 +18,24 @@ const app = express();
 console.log("APP.JS LOG: Application démarrant...");
 
 // === CORS ===
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173", // local dev
-      "https://medoclic-dashboard.vercel.app", // si tu as ce dashboard
-      "https://medoclic-site-web-version-ameliorer.vercel.app", // production frontend actuel
-    ],
-    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // obligatoire pour passer les cookies
-  })
-);
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://medoclic-dashboard.vercel.app", // dashboard Vercel
+  "https://medoclic-site-web-version-ameliorer.vercel.app", // frontend principal
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // nécessaire pour les cookies
+}));
+
+// Gestion des requêtes preflight OPTIONS
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
 // === Body parsers & cookie parser ===
 app.use(express.json({ limit: "20mb" }));
