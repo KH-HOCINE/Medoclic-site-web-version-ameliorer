@@ -1,43 +1,34 @@
-// app.js
-import 'dotenv/config';
 import express from "express";
-import cookieParser from "cookie-parser";
 import cors from "cors";
-
-import { dbConnection } from "./database/dbConnection.js";
-import { sendEmail } from "./utils/sendEmail.js";
-
-import { errorMiddleware } from "./middlewares/error.js";
-
-import userRouter from "./router/userRouter.js";
-import patientRouter from "./router/Patient.route.js";
-import medicamentRouter from "./router/Medicament.route.js";
-import trashRouter from "./router/Trash.route.js";
+import cookieParser from "cookie-parser";
 
 const app = express();
-console.log("APP.JS LOG: Application démarrant...");
 
-// === CORS ===
 const allowedOrigins = [
-  "http://localhost:5173", // local dev
-  "https://medoclic-dashboard.vercel.app", // dashboard Vercel
-  "https://medoclic-site-web-version-ameliorer.vercel.app", // frontend principal
+  "http://localhost:5173",
+  "https://medoclic-dashboard.vercel.app",
+  "https://medoclic-site-web-version-ameliorer.vercel.app"
 ];
 
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true, // nécessaire pour les cookies
-}));
+// Middleware CORS global
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
-// Gestion des requêtes preflight OPTIONS
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+  // Répondre immédiatement aux requêtes OPTIONS
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
 
-// === Body parsers & cookie parser ===
+  next();
+});
+
+// Body parsers
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
