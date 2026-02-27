@@ -94,57 +94,61 @@ const Justification = () => {
   return (
     <div className="form-component">
       {showPreview ? (
-        <div className="certificate-preview">
-          <div className="preview-content">
-            <div className="doctor-header">
-              <div className="doctor-info">
-                <div>N°: {admin?.ordreNumber}</div>
-                <div>Dr. {admin?.firstName} {admin?.lastName}</div>
-                <div>Spécialité : {admin?.specialite}</div>
-                <div>{admin?.cabinetAddress}</div>
-                <div>Tél: {admin?.cabinetPhone}</div>
-              </div>
-              
-              <div className="date-div">
-                <p>Fait le {currentDate}</p>
-              </div>
-            </div>
-            
-            <div className="patient-data-container">
-              <p className="patient-data">Nom : {selectedPatientData?.lastName}</p>
-              <span className="separator">|</span>
-              <p className="patient-data">Prénom : {selectedPatientData?.firstName}</p>
-              <span className="separator">|</span>
-              <p className="patient-data">Age : {selectedPatientData ? calculateAge(selectedPatientData.dob) : ''}</p>
-            </div>
+        <>
+          <div className="certificate-preview">
+            <div className="preview-content">
+              <div className="certificate-body">
+                <div className="doctor-header">
+                  <div className="doctor-info">
+                    <div>N°: {admin?.ordreNumber}</div>
+                    <div>Dr. {admin?.firstName} {admin?.lastName}</div>
+                    <div>Spécialité : {admin?.specialite}</div>
+                    <div>{admin?.cabinetAddress}</div>
+                    <div>Tél: {admin?.cabinetPhone}</div>
+                  </div>
+                  
+                  <div className="date-div">
+                    <p>Fait le {currentDate}</p>
+                  </div>
+                </div>
+                
+                <div className="patient-data-container">
+                  <p className="patient-data">Nom : {selectedPatientData?.lastName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Prénom : {selectedPatientData?.firstName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Age : {selectedPatientData ? calculateAge(selectedPatientData.dob) : ''}</p>
+                </div>
 
-            <h2 className="certificate-title">JUSTIFICATION MÉDICALE</h2>
+                <h2 className="certificate-title">JUSTIFICATION MÉDICALE</h2>
 
-            <div className="contenu">
-              <p>Je soussigné(e), Dr {admin?.firstName} {admin?.lastName}  Certifie avoir vu et examiné le patient(e) agé de {selectedPatientData ? calculateAge(selectedPatientData.dob) : ''} ans ce jour au cabinet. </p>
-              <p>dont certificat </p>
-            </div>
-            
-            <div className="signature">
-              <p>Signature et cachet du médecin</p>
-              <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                <div className="contenu">
+                  <strong><p>Je soussigné(e), Dr {admin?.firstName} {admin?.lastName}  Certifie avoir vu et examiné le patient(e) agé de {selectedPatientData ? calculateAge(selectedPatientData.dob) : ''} ans ce jour au cabinet. </p>
+                  <p>dont certificat </p></strong>
+                </div>
+                
+                <div className="signature">
+                  <p>Signature et cachet du médecin</p>
+                  <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="preview-actions no-print">
             <div className="button-container">
-              <button className="print-button" onClick={() => window.print()}>
+              <button className="action-button" onClick={() => window.print()}>
                 Imprimer
               </button>
-              <button className="edit-button" onClick={() => setShowPreview(false)}>
+              <button className="action-button" onClick={() => setShowPreview(false)}>
                 Modifier
               </button>
-              <button className="submit-button" onClick={handleSave}>
+              <button className="action-button" onClick={handleSave}>
                 Enregistrer
               </button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="form-container">
           {/* Colonne gauche - Image */}

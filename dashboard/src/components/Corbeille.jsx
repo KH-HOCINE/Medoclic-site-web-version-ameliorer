@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { FaTrashAlt, FaSync, FaSearch, FaFileAlt, FaTimes } from "react-icons/fa";
 import "../App.css";
 
 const Corbeille = () => {
@@ -524,7 +525,7 @@ const Corbeille = () => {
   return (
     <div className="corbeille-container">
       <div className="corbeille-header">
-        <h2>🗑️ Corbeille</h2>
+        <h2><FaTrashAlt /> Corbeille</h2>
         {stats && (
           <div className="trash-stats">
             <span>Total: {stats.totalItems} éléments</span>
@@ -572,14 +573,14 @@ const Corbeille = () => {
           onClick={handleEmptyTrash}
           disabled={trashItems.length === 0}
         >
-          🗑️ Vider la corbeille
+          <FaTrashAlt /> Vider la corbeille
         </button>
       </div>
 
       <div className="trash-items-list">
         {trashItems.length === 0 ? (
           <div className="empty-trash">
-            <p>🗑️ La corbeille est vide</p>
+            <p><FaTrashAlt /> La corbeille est vide</p>
           </div>
         ) : (
           trashItems.map((item) => (
@@ -609,13 +610,13 @@ const Corbeille = () => {
                   className="btn-restore"
                   onClick={(e) => handleRestore(item._id, renderItemDetails(item), e)}
                 >
-                  🔄 Restaurer
+                  <FaSync /> Restaurer
                 </button>
                 <button 
                   className="btn-permanent-delete"
                   onClick={(e) => handlePermanentDelete(item._id, renderItemDetails(item), e)}
                 >
-                  🗑️ Supprimer
+                  <FaTrashAlt /> Supprimer
                 </button>
               </div>
             </div>
@@ -648,12 +649,12 @@ const Corbeille = () => {
         <div className="preview-modal-overlay" onClick={() => setIsPreviewOpen(false)}>
           <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="preview-header-bar">
-              <h2>📄 Aperçu - {itemTypeLabels[previewItem.itemType]}</h2>
+              <h2><FaFileAlt /> Aperçu - {itemTypeLabels[previewItem.itemType]}</h2>
               <button 
                 className="preview-close-btn"
                 onClick={() => setIsPreviewOpen(false)}
               >
-                ✕
+                <FaTimes />
               </button>
             </div>
             <div className="preview-body">

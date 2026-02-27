@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { Context } from "../main";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import { FaUsers, FaCalendarAlt, FaUserClock } from "react-icons/fa"; // <-- AJOUTER CETTE LIGNE
+import { FaUsers, FaCalendarAlt, FaUserClock, FaTrashAlt, FaFolder, FaClock, FaPhone, FaCheckCircle, FaCog, FaUser } from "react-icons/fa";
 
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -28,21 +28,22 @@ const Dashboard = () => {
   // Fonction pour trier les rendez-vous par heure d'arrivée
   const sortAppointmentsByArrival = (appointments) => {
     return appointments.sort((a, b) => {
-      // Si les deux ont une heure d'arrivée, les trier par heure d'arrivée
       if (a.arrivalTime && b.arrivalTime) {
         return new Date(a.arrivalTime) - new Date(b.arrivalTime);
       }
-      // Si seulement 'a' a une heure d'arrivée, 'a' vient en premier
       if (a.arrivalTime && !b.arrivalTime) {
         return -1;
       }
-      // Si seulement 'b' a une heure d'arrivée, 'b' vient en premier
       if (!a.arrivalTime && b.arrivalTime) {
         return 1;
       }
-      // Si aucun n'a d'heure d'arrivée, trier par heure de rendez-vous
       return new Date(a.date) - new Date(b.date);
     });
+  };
+
+  // Fonction helper : décrémente uniquement pour "Consulté" ou "RDV annulé"
+  const isUnconsulted = (status) => {
+    return status !== 'Consulté' && status !== 'RDV annulé';
   };
 
   useEffect(() => {
@@ -63,7 +64,7 @@ const Dashboard = () => {
         );
 
         const patientsWithAppointmentsToday = appointmentsResponse.data.patients || [];
-        
+
         const startOfCurrentDayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0));
         const endOfCurrentDayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0, 0));
 
@@ -79,21 +80,19 @@ const Dashboard = () => {
               firstName: patient.firstName,
               lastName: patient.lastName,
               phoneNumber: patient.phoneNumber,
-              seen: appt.seenStatus, // Garder pour compatibilité
-              appointmentStatus: appt.appointmentStatus // Nouveau champ
+              seen: appt.seenStatus,
+              appointmentStatus: appt.appointmentStatus
             }))
         );
 
-        // Utiliser la nouvelle fonction de tri
         const sortedAppointments = sortAppointmentsByArrival(allAppointments);
-        
+
         setAppointments(sortedAppointments);
         setPatientsToday(sortedAppointments.length);
 
-        // MODIFIER le calcul des patients non consultés pour utiliser le nouveau système de statuts
         const unconsultedCount = sortedAppointments.filter(appt => {
           const currentStatus = appt.appointmentStatus || (appt.seen ? 'Consulté' : 'En attente');
-          return currentStatus !== 'Consulté';
+          return isUnconsulted(currentStatus);
         }).length;
         setUnconsultedPatientsToday(unconsultedCount);
 
@@ -157,31 +156,28 @@ const Dashboard = () => {
         {
           patientId,
           appointmentId,
-          status: newStatus, // 'status' au lieu de 'seen'
+          status: newStatus,
         },
         { withCredentials: true }
       );
       toast.success("Statut mis à jour !");
 
-      // Mettre à jour l'état local pour un affichage instantané
       const updatedAppointments = appointments.map(appt =>
         appt._id === appointmentId
-          ? { 
-              ...appt, 
+          ? {
+              ...appt,
               appointmentStatus: newStatus,
-              seen: newStatus === 'Consulté' // Maintenir la compatibilité avec l'ancien système
+              seen: newStatus === 'Consulté'
             }
           : appt
       );
-      
-      // Re-trier après la mise à jour
+
       const sortedAppointments = sortAppointmentsByArrival(updatedAppointments);
       setAppointments(sortedAppointments);
 
-      // Recalculer le compteur des patients en attente (basé sur le nouveau statut)
       const unconsulted = sortedAppointments.filter(appt => {
         const currentStatus = appt.appointmentStatus || (appt.seen ? 'Consulté' : 'En attente');
-        return currentStatus !== 'Consulté';
+        return isUnconsulted(currentStatus);
       }).length;
       setUnconsultedPatientsToday(unconsulted);
 
@@ -196,7 +192,7 @@ const Dashboard = () => {
     try {
       const originalAppointment = appointments.find(a => a._id === appointmentId);
       if (!originalAppointment) return;
-      
+
       const arrivalDate = new Date(originalAppointment.date);
       const [hours, minutes] = newTimeValue.split(':');
       arrivalDate.setHours(hours, minutes);
@@ -208,12 +204,10 @@ const Dashboard = () => {
       );
       toast.success("Heure d'arrivée enregistrée !");
 
-      // Mettre à jour l'état et re-trier automatiquement
-      const updatedAppointments = appointments.map(appt => 
+      const updatedAppointments = appointments.map(appt =>
         appt._id === appointmentId ? { ...appt, arrivalTime: arrivalDate.toISOString() } : appt
       );
-      
-      // Re-trier les rendez-vous après la mise à jour de l'heure d'arrivée
+
       const sortedAppointments = sortAppointmentsByArrival(updatedAppointments);
       setAppointments(sortedAppointments);
 
@@ -231,12 +225,11 @@ const Dashboard = () => {
         { withCredentials: true }
       );
       toast.success("Heure du rendez-vous mise à jour");
-      
-      const updatedAppointments = appointments.map(appt => 
+
+      const updatedAppointments = appointments.map(appt =>
         appt._id === appointmentId ? { ...appt, date: newDate.toISOString() } : appt
       );
-      
-      // Re-trier après la modification de l'heure de rendez-vous
+
       const sortedAppointments = sortAppointmentsByArrival(updatedAppointments);
       setAppointments(sortedAppointments);
 
@@ -256,17 +249,17 @@ const Dashboard = () => {
         { withCredentials: true }
       );
       toast.success(`Rendez-vous de ${patientName} supprimé avec succès`);
-      
+
       const updatedAppointments = appointments.filter(appt => appt._id !== appointmentId);
-      // Pas besoin de re-trier ici car on supprime juste un élément
       setAppointments(updatedAppointments);
       setPatientsToday(updatedAppointments.length);
-      
+
       const unconsulted = updatedAppointments.filter(appt => {
         const currentStatus = appt.appointmentStatus || (appt.seen ? 'Consulté' : 'En attente');
-        return currentStatus !== 'Consulté';
+        return isUnconsulted(currentStatus);
       }).length;
       setUnconsultedPatientsToday(unconsulted);
+
     } catch (error) {
       console.error("Erreur lors de la suppression du rendez-vous:", error);
       toast.error(error.response?.data?.message || "Erreur lors de la suppression du rendez-vous");
@@ -280,44 +273,43 @@ const Dashboard = () => {
   return (
     <section className="dashboard page">
       <div className="banner">
-<div className="firstBox">
-  <div className="content">
-    <div className="admin-info">
-      {/* Photo de profil */}
-      {admin?.profilePhoto ? (
-        <img 
-          src={admin.profilePhoto} 
-          alt={`Dr ${admin.lastName}`}
-          className="admin-profile-photo"
-        />
-      ) : (
-        <div className="admin-photo-placeholder">
-          👨‍⚕️
+        <div className="firstBox">
+          <div className="content">
+            <div className="admin-info">
+              {admin?.profilePhoto ? (
+                <img
+                  src={admin.profilePhoto}
+                  alt={`Dr ${admin.lastName}`}
+                  className="admin-profile-photo"
+                />
+              ) : (
+                <div className="admin-photo-placeholder">
+                  👨‍⚕️
+                </div>
+              )}
+              <div className="admin-details" onClick={() => navigate("/profile")} style={{ cursor: "pointer" }}>
+                <p>Bonjour Dr,</p>
+                <h5>{admin && `${admin.lastName} ${admin.firstName}`}</h5>
+              </div>
+            </div>
+            <p>{format(currentDateTime, "dd/MM/yyyy HH:mm:ss")}</p>
+          </div>
         </div>
-      )}
-      <div className="admin-details" onClick={() => navigate("/profile")} style={{ cursor: "pointer" }}>
-        <p>Bonjour Dr,</p>
-        <h5>{admin && `${admin.lastName} ${admin.firstName}`}</h5>
-      </div>
-    </div>
-    <p>{format(currentDateTime, "dd/MM/yyyy HH:mm:ss")}</p>
-  </div>
-</div>
 
         <div className="secondBox" onClick={() => navigate("/patients")} style={{ cursor: "pointer" }}>
           <p>
-        <FaUsers /> {/* <-- ICÔNE AJOUTÉE */}
-        <span>Nombre total de patients inscrit au cabinet :</span> {/* <-- TEXTE DANS UN SPAN */}
-         </p>
+            <FaUsers />
+            <span>Nombre total de patients inscrit au cabinet :</span>
+          </p>
           <h3>{totalPatients}</h3>
           <h5>voir plus...</h5>
         </div>
 
         <div className="thirdBox" onClick={() => navigate("/calendar")} style={{ cursor: "pointer" }}>
           <p>
-             <FaCalendarAlt /> {/* <-- ICÔNE AJOUTÉE */}
-             <span>Nombre total de RDV programmés aujourd'hui:</span> {/* <-- TEXTE DANS UN SPAN */}
-         </p>
+            <FaCalendarAlt />
+            <span>Nombre total de RDV programmés aujourd'hui:</span>
+          </p>
           <h3>{patientsToday}</h3>
           <h5>voir plus...</h5>
         </div>
@@ -328,9 +320,9 @@ const Dashboard = () => {
           onClick={() => document.getElementById('today-appointments')?.scrollIntoView({ behavior: 'smooth' })}
         >
           <p>
-              <FaUserClock /> {/* <-- ICÔNE AJOUTÉE */}
-              <span>Nombre de patients restant à consulter aujourd'hui :</span> {/* <-- TEXTE DANS UN SPAN */}
-         </p>
+            <FaUserClock />
+            <span>Nombre de patients restant à consulter aujourd'hui :</span>
+          </p>
           <h3>{unconsultedPatientsToday}</h3>
           <h5>Patients en attente</h5>
         </div>
@@ -338,30 +330,29 @@ const Dashboard = () => {
 
       <div className="appointments-section" id="today-appointments">
         <h5 className="appointments-title">
-          Rendez-vous du jour 
+          Rendez-vous du jour
         </h5>
         <div className="banner">
           <table>
             <thead>
               <tr>
-                <th>Patient</th>
-                <th>Heure RDV</th>
-                <th>Heure d'arrivée</th>
-                <th>Téléphone</th>
-                <th>Statut</th>
-                <th>Actions</th>
+                <th><FaUser style={{ marginRight: '8px' }} />Patient</th>
+                <th><FaClock style={{ marginRight: '8px' }} />Heure RDV</th>
+                <th><FaClock style={{ marginRight: '8px' }} />Heure d'arrivée</th>
+                <th><FaPhone style={{ marginRight: '8px' }} />Téléphone</th>
+                <th><FaCheckCircle style={{ marginRight: '8px' }} />Statut</th>
+                <th><FaCog style={{ marginRight: '8px' }} />Actions</th>
               </tr>
             </thead>
             <tbody>
               {appointments.length > 0 ? (
-                appointments.map((appointment, index) => {
-                  // Déterminer le statut actuel - priorité au nouveau champ appointmentStatus
+                appointments.map((appointment) => {
                   const currentStatus = appointment.appointmentStatus || (appointment.seen ? 'Consulté' : 'En attente');
-                  
+
                   return (
-                    <tr 
+                    <tr
                       key={appointment._id}
-                      style={{ 
+                      style={{
                         backgroundColor: appointment.arrivalTime ? '#f0f8ff' : 'transparent',
                         borderLeft: appointment.arrivalTime ? '3px solid #007bff' : 'none'
                       }}
@@ -369,7 +360,6 @@ const Dashboard = () => {
                       <td>
                         {appointment.arrivalTime && (
                           <span style={{ color: '#007bff', fontSize: '12px', marginRight: '5px' }}>
-                            
                           </span>
                         )}
                         {`${appointment.firstName} ${appointment.lastName}`}
@@ -425,23 +415,23 @@ const Dashboard = () => {
                       </td>
                       <td className="dashboard-actions-column">
                         <div className="dashboard-actions-buttons">
-                          <button 
+                          <button
                             className="dashboard-btn-view-file"
                             onClick={() => navigate(`/dossier-patient/${appointment.patientId}`)}
                             title="Consulter le dossier du patient"
                           >
-                            📋 Voir Dossier
+                            <FaFolder /> Voir Dossier
                           </button>
-                          <button 
+                          <button
                             className="dashboard-btn-delete-appointment"
                             onClick={() => handleDeleteAppointment(
-                              appointment.patientId, 
-                              appointment._id, 
+                              appointment.patientId,
+                              appointment._id,
                               `${appointment.firstName} ${appointment.lastName}`
                             )}
                             title="Supprimer ce rendez-vous"
                           >
-                            🗑️ Supprimer RDV
+                            <FaTrashAlt /> Supprimer RDV
                           </button>
                         </div>
                       </td>

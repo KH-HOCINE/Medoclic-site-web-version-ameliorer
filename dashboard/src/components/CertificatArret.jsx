@@ -152,67 +152,69 @@ const CertificatArret = () => {
   return (
     <div className="form-component">
       {showPreview ? (
-        <div className="certificate-preview">
-          <div className="preview-content">
-            <div className="certificate-body">
-              <div className="doctor-header">
-                <div className="doctor-info">
-                  <div>N°: {admin?.ordreNumber}</div>
-                  <div>Dr. {admin?.firstName} {admin?.lastName}</div>
-                  <div>Spécialité : {admin?.specialite}</div>
-                  <div>{admin?.cabinetAddress}</div>
-                  <div>Tél: {admin?.cabinetPhone}</div>
+        <>
+          <div className="certificate-preview">
+            <div className="preview-content">
+              <div className="certificate-body">
+                <div className="doctor-header">
+                  <div className="doctor-info">
+                    <div>N°: {admin?.ordreNumber}</div>
+                    <div>Dr. {admin?.firstName} {admin?.lastName}</div>
+                    <div>Spécialité : {admin?.specialite}</div>
+                    <div>{admin?.cabinetAddress}</div>
+                    <div>Tél: {admin?.cabinetPhone}</div>
+                  </div>
+                  <div className="date-div">
+                    <p>Fait le {currentDate}</p>
+                  </div>
                 </div>
-                <div className="date-div">
-                  <p>Fait le {currentDate}</p>
+
+                <div className="patient-data-container">
+                  <p className="patient-data">Nom : {selectedPatientData?.lastName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Prénom : {selectedPatientData?.firstName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Age : {calculateAge(selectedPatientData?.dob)}</p>
                 </div>
-              </div>
 
-              <div className="patient-data-container">
-                <p className="patient-data">Nom : {selectedPatientData?.lastName}</p>
-                <span className="separator">|</span>
-                <p className="patient-data">Prénom : {selectedPatientData?.firstName}</p>
-                <span className="separator">|</span>
-                <p className="patient-data">Age : {calculateAge(selectedPatientData?.dob)}</p>
-              </div>
+                <h2 className="certificate-title">CERTIFICAT D'ARRET DE TRAVAIL</h2>
 
-              <h2 className="certificate-title">CERTIFICAT D'ARRET DE TRAVAIL</h2>
+                {arretJours ? (
+                  <>
+                    <strong><p>Je soussigné, Dr {admin?.firstName} {admin?.lastName} certifie avoir examiné ce jour le (la) nommé(e) M. {selectedPatientData?.firstName} {selectedPatientData?.lastName} et déclare que son état de santé nécessite un arrêt de travail de {arretJours} jours.</p>
+                    <p>À compter de : {formatDate(arretStart)}</p></strong>
+                  </>
+                ) : (
+                  <>
+                    <strong><p>Je soussigné, Dr {admin?.firstName} {admin?.lastName} certifie avoir examiné ce jour le (la) nommé(e) M. {selectedPatientData?.firstName} {selectedPatientData?.lastName} et déclare que son état de santé nécessite une prolongation d'arrêt de travail de {prolongationJours} jours.</p></strong>
+                    <strong><p>Du : {formatDate(prolongationStart)} au : {formatDate(prolongationEnd)}</p></strong>
+                  </>
+                )}
 
-              {arretJours ? (
-                <>
-                  <p>Je soussigné, Dr {admin?.firstName} {admin?.lastName} certifie avoir examiné ce jour le (la) nommé(e) M. {selectedPatientData?.firstName} {selectedPatientData?.lastName} et déclare que son état de santé nécessite un arrêt de travail de {arretJours} jours.</p>
-                  <p>À compter de : {formatDate(arretStart)}</p>
-                </>
-              ) : (
-                <>
-                  <p>Je soussigné, Dr {admin?.firstName} {admin?.lastName} certifie avoir examiné ce jour le (la) nommé(e) M. {selectedPatientData?.firstName} {selectedPatientData?.lastName} et déclare que son état de santé nécessite une prolongation d'arrêt de travail de {prolongationJours} jours.</p>
-                  <p>Du : {formatDate(prolongationStart)} au : {formatDate(prolongationEnd)}</p>
-                </>
-              )}
+                <strong><p>Reprise du travail le {formatDate(returnDate)}</p></strong>
 
-              <p>Reprise du travail le {formatDate(returnDate)}</p>
-
-              <div className="signature">
-                <p>Signature et cachet du médecin</p>
-                <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                <div className="signature">
+                  <p>Signature et cachet du médecin</p>
+                  <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="preview-actions no-print">
             <div className="button-container">
-              <button className="print-button" onClick={() => window.print()}>
+              <button className="action-button" onClick={() => window.print()}>
                 Imprimer
               </button>
-              <button className="edit-button" onClick={() => setShowPreview(false)}>
+              <button className="action-button" onClick={() => setShowPreview(false)}>
                 Modifier
               </button>
-              <button className="submit-button" onClick={handleSave}>
+              <button className="action-button" onClick={handleSave}>
                 Enregistrer
               </button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <>
           <h2 className="form-title">Certificat d'arrêt de travail</h2>

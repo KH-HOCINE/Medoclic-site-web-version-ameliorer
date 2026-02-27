@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { FaEdit, FaTrashAlt, FaSearch, FaPlus, FaTimes } from "react-icons/fa";
+import { MdSave } from "react-icons/md";
 import "../App.css"; // Votre fichier CSS
 
 const ListeMedicaments = () => {
@@ -21,6 +23,9 @@ const ListeMedicaments = () => {
   const [voie, setVoie] = useState("");
   const [classeTherapeutique, setClasseTherapeutique] = useState("");
   const [description, setDescription] = useState("");
+
+  // États pour les valeurs initiales (pour détecter les changements)
+  const [initialValues, setInitialValues] = useState({});
 
   // Charger tous les médicaments
   const fetchMedicaments = async () => {
@@ -46,18 +51,59 @@ const ListeMedicaments = () => {
     med.nomCommercial.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Vérifier si des modifications ont été faites
+  const hasChanges = () => {
+    return (
+      nomCommercial !== initialValues.nomCommercial ||
+      nomScientifique !== initialValues.nomScientifique ||
+      dosage !== initialValues.dosage ||
+      forme !== initialValues.forme ||
+      formeAutre !== initialValues.formeAutre ||
+      voie !== initialValues.voie ||
+      classeTherapeutique !== initialValues.classeTherapeutique ||
+      description !== initialValues.description
+    );
+  };
+
   // Ouvrir le formulaire de modification
   const handleEdit = (medicament) => {
     setEditingMedicament(medicament);
-    setNomCommercial(medicament.nomCommercial);
-    setNomScientifique(medicament.nomScientifique || "");
-    setDosage(medicament.dosage);
-    setForme(medicament.forme);
-    setFormeAutre(medicament.formeAutre || "");
-    setVoie(medicament.voie);
-    setClasseTherapeutique(medicament.classeTherapeutique);
-    setDescription(medicament.description || "");
+    const initialData = {
+      nomCommercial: medicament.nomCommercial,
+      nomScientifique: medicament.nomScientifique || "",
+      dosage: medicament.dosage,
+      forme: medicament.forme,
+      formeAutre: medicament.formeAutre || "",
+      voie: medicament.voie,
+      classeTherapeutique: medicament.classeTherapeutique,
+      description: medicament.description || ""
+    };
+    
+    setNomCommercial(initialData.nomCommercial);
+    setNomScientifique(initialData.nomScientifique);
+    setDosage(initialData.dosage);
+    setForme(initialData.forme);
+    setFormeAutre(initialData.formeAutre);
+    setVoie(initialData.voie);
+    setClasseTherapeutique(initialData.classeTherapeutique);
+    setDescription(initialData.description);
+    setInitialValues(initialData);
     setShowModal(true);
+  };
+
+  // Fermer la modal sans confirmation (utilisé après sauvegarde)
+  const closeModalWithoutConfirmation = () => {
+    setShowModal(false);
+    setEditingMedicament(null);
+    setNomCommercial("");
+    setNomScientifique("");
+    setDosage("");
+    setForme("");
+    setFormeAutre("");
+    setVoie("");
+    setClasseTherapeutique("");
+    setDescription("");
+    setInitialValues({});
   };
 
   // Sauvegarder les modifications
@@ -79,26 +125,28 @@ const ListeMedicaments = () => {
       );
       
       toast.success(response.data.message);
-      handleCloseModal();
+      // Fermer directement sans confirmation après sauvegarde
+      closeModalWithoutConfirmation();
       fetchMedicaments(); // Recharger la liste
     } catch (error) {
       toast.error(error.response?.data?.message || "Erreur lors de la modification");
     }
   };
 
-  // Fermer la modal
+  // Fermer la modal avec confirmation si nécessaire
   const handleCloseModal = () => {
-    setShowModal(false);
-    setEditingMedicament(null);
-    // Réinitialiser les champs
-    setNomCommercial("");
-    setNomScientifique("");
-    setDosage("");
-    setForme("");
-    setFormeAutre("");
-    setVoie("");
-    setClasseTherapeutique("");
-    setDescription("");
+    // Vérifier s'il y a des modifications
+    if (hasChanges()) {
+      const confirmClose = window.confirm(
+        "Êtes-vous sûr de vouloir quitter sans enregistrer vos modifications ?"
+      );
+      if (!confirmClose) {
+        return; // Ne pas fermer la modal
+      }
+    }
+    
+    // Fermer la modal et réinitialiser
+    closeModalWithoutConfirmation();
   };
 
   // Supprimer un médicament
@@ -131,27 +179,30 @@ const ListeMedicaments = () => {
 
   return (
     <div className="form-component">
-      {/* En-tête avec bouton aligné à droite */}
+      {/* En-tête avec titre */}
       <div className="form-header">
         <h2>Liste des médicaments</h2>
-        <div className="button-group">
-          <button 
-            onClick={() => navigate("/add-medicament")}
-            className="add-button"
-          >
-            ✚ Ajouter un médicament
-          </button>
-        </div>
       </div>
 
       {/* Barre de recherche */}
       <div className="search-container">
+        <FaSearch className="search-icon" />
         <input
           type="text"
           placeholder="Rechercher par nom commercial..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+      </div>
+
+      {/* Bouton d'ajout au-dessus du tableau */}
+      <div className="table-actions">
+        <button 
+          onClick={() => navigate("/add-medicament")}
+          className="add-button"
+        >
+          <FaPlus /> Ajouter un nouveau médicament
+        </button>
       </div>
 
       {/* Tableau des médicaments */}
@@ -200,14 +251,14 @@ const ListeMedicaments = () => {
                         className="edit-button"
                         title="Modifier"
                       >
-                        ✏️ Modifier
+                        <FaEdit /> Modifier
                       </button>
                       <button 
                         onClick={() => handleDelete(medicament._id, medicament.nomCommercial)}
                         className="delete-button"
                         title="Supprimer"
                       >
-                        🗑️ Supprimer
+                        <FaTrashAlt /> Supprimer
                       </button>
                     </div>
                   </td>
@@ -229,7 +280,7 @@ const ListeMedicaments = () => {
                 className="close-button"
                 title="Fermer"
               >
-                ✕
+                <FaTimes />
               </button>
             </div>
             
@@ -342,16 +393,10 @@ const ListeMedicaments = () => {
             
             <div className="modal-footer">
               <button 
-                onClick={handleCloseModal}
-                className="cancel-button"
-              >
-                Annuler
-              </button>
-              <button 
                 onClick={handleSave}
                 className="submit-button"
               >
-                💾 Sauvegarder
+                <MdSave /> Sauvegarder
               </button>
             </div>
           </div>

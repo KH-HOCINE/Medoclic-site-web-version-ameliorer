@@ -1,16 +1,84 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import React, { useState } from "react";
 import '../App.css';
 
-const ScoreDetail = () => {
-  const { scoreId } = useParams();
+const scoresBySpecialty = {
+  "Cardiologie": [
+    { id: "cha2ds2vasc", name: "CHA2DS2-VASc (Score)", description: "Risque embolique sur ACFA (Fibrillation Atriale)" },
+    { id: "wells-dvt", name: "Wells, Phlébite (Score)", description: "Probabilité de thrombose veineuse profonde (TVP)" },
+    { id: "grace", name: "GRACE (Score)", description: "Risque de mortalité dans le syndrome coronarien aigu" },
+    { id: "hasbled", name: "HAS-BLED (Score)", description: "Risque hémorragique sous anticoagulants" },
+    { id: "nyha", name: "NYHA (Classification)", description: "Classification de l'insuffisance cardiaque" },
+  ],
+  "Gériatrie": [
+    { id: "4peps", name: "4PEPS (Score)", description: "Dépistage de la fragilité chez la personne âgée" },
+    { id: "mmse", name: "MMSE (Score)", description: "Mini-Mental State Examination - Évaluation cognitive" },
+    { id: "iadl", name: "IADL (Score)", description: "Activités instrumentales de la vie quotidienne" },
+    { id: "adl", name: "ADL (Score)", description: "Activités de base de la vie quotidienne (Katz)" },
+  ],
+  "Hépato-Gastroentérologie": [
+    { id: "child-pugh", name: "Child-Pugh (Score)", description: "Stades de sévérité d'une cirrhose hépatique" },
+    { id: "meld", name: "MELD (Score)", description: "Sévérité de la maladie hépatique terminale" },
+    { id: "rockall", name: "Rockall (Score)", description: "Risque de mortalité dans l'hémorragie digestive haute" },
+  ],
+  "Neurologie": [
+    { id: "glasgow", name: "Glasgow (Score)", description: "Evaluation de l'état de conscience" },
+    { id: "nihss", name: "NIHSS (Score)", description: "Évaluation de la sévérité d'un AVC" },
+    { id: "rankin", name: "Rankin modifié (Score)", description: "Degré d'incapacité après un AVC" },
+  ],
+  "Nutrition": [
+    { id: "imc", name: "Indice de Masse Corporelle (IMC)", description: "Évaluation du statut pondéral (surpoids, obésité)" },
+    { id: "mna", name: "MNA (Score)", description: "Mini Nutritional Assessment - Dépistage de la dénutrition" },
+  ],
+  "Pneumologie": [
+    { id: "curb65", name: "CURB-65 (Score)", description: "Sévérité d'une pneumonie communautaire" },
+    { id: "wells-ep", name: "Wells, Embolie Pulmonaire (Score)", description: "Probabilité d'embolie pulmonaire" },
+    { id: "gold", name: "GOLD (Classification)", description: "Stades de sévérité de la BPCO" },
+  ],
+  "Réanimation": [
+    { id: "qsofa", name: "qSOFA (Score)", description: "Gravité sepsis simplifiée (Quick SOFA)" },
+    { id: "sofa", name: "SOFA (Score)", description: "Évaluation des défaillances d'organes" },
+    { id: "saps2", name: "SAPS II (Score)", description: "Simplified Acute Physiology Score" },
+    { id: "apache2", name: "APACHE II (Score)", description: "Acute Physiology and Chronic Health Evaluation" },
+  ],
+  "Néphrologie": [
+    { id: "mdrd", name: "MDRD (Formule)", description: "Estimation du débit de filtration glomérulaire" },
+    { id: "ckd-epi", name: "CKD-EPI (Formule)", description: "Estimation du DFG (plus précise que MDRD)" },
+    { id: "cockroft", name: "Cockcroft-Gault (Formule)", description: "Clairance de la créatinine" },
+  ],
+  "Obstétrique": [
+    { id: "apgar", name: "Score d'Apgar", description: "Vitalité du nouveau-né à la naissance" },
+    { id: "bishop", name: "Bishop (Score)", description: "Maturation cervicale avant déclenchement" },
+  ],
+  "Psychiatrie": [
+    { id: "phq9", name: "PHQ-9 (Score)", description: "Dépistage et évaluation de la dépression" },
+    { id: "gad7", name: "GAD-7 (Score)", description: "Dépistage du trouble anxieux généralisé" },
+  ],
+  "Rhumatologie": [
+    { id: "das28", name: "DAS28 (Score)", description: "Activité de la polyarthrite rhumatoïde" },
+    { id: "frax", name: "FRAX (Score)", description: "Risque de fracture ostéoporotique" },
+  ],
+  "Urologie": [
+    { id: "ipss", name: "IPSS (Score)", description: "Symptômes prostatiques (International Prostate Symptom Score)" },
+  ],
+};
+
+const ModalScores = ({ onInsertScore, onClose }) => {
+  const [selectedSpecialty, setSelectedSpecialty] = useState("Tous");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedScore, setSelectedScore] = useState(null);
   const [inputs, setInputs] = useState({});
   const [result, setResult] = useState(null);
 
-  useEffect(() => {
-    setInputs({});
-    setResult(null);
-  }, [scoreId]);
+  const allScores = Object.keys(scoresBySpecialty).reduce((acc, specialty) => {
+    return [...acc, ...scoresBySpecialty[specialty].map(score => ({ ...score, specialty }))];
+  }, []);
+
+  const filteredScores = allScores.filter(score => {
+    const matchesSpecialty = selectedSpecialty === "Tous" || score.specialty === selectedSpecialty;
+    const matchesSearch = score.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          score.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSpecialty && matchesSearch;
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -26,9 +94,9 @@ const ScoreDetail = () => {
     setInputs(prev => ({ ...prev, [name]: finalValue }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const calculateScore = () => {
     let calculatedResult = '';
+    const scoreId = selectedScore.id;
 
     switch (scoreId) {
       case "imc": {
@@ -524,49 +592,17 @@ const ScoreDetail = () => {
       }
       
       default:
-        break;
+        calculatedResult = "Score non implémenté dans la version modale";
     }
+    
     setResult(calculatedResult);
   };
 
-  const getScoreTitle = () => {
-    const titles = {
-      "imc": "Indice de Masse Corporelle (IMC)",
-      "glasgow": "Score de Glasgow",
-      "4peps": "Score 4PEPS - Dépistage de la fragilité",
-      "cha2ds2vasc": "Score CHA2DS2-VASc",
-      "wells-dvt": "Score de Wells - Probabilité de TVP",
-      "child-pugh": "Score de Child-Pugh",
-      "qsofa": "Score qSOFA (Quick SOFA)",
-      "grace": "Score GRACE",
-      "hasbled": "Score HAS-BLED",
-      "nyha": "Classification NYHA",
-      "mmse": "MMSE - Mini-Mental State Examination",
-      "iadl": "Score IADL - Activités Instrumentales",
-      "adl": "Score ADL (Katz)",
-      "meld": "Score MELD",
-      "rockall": "Score de Rockall",
-      "nihss": "Score NIHSS",
-      "rankin": "Score de Rankin modifié",
-      "mna": "MNA - Mini Nutritional Assessment",
-      "curb65": "Score CURB-65",
-      "wells-ep": "Score de Wells - Embolie Pulmonaire",
-      "gold": "Classification GOLD",
-      "sofa": "Score SOFA",
-      "saps2": "Score SAPS II",
-      "apache2": "Score APACHE II",
-      "mdrd": "Formule MDRD",
-      "ckd-epi": "Formule CKD-EPI",
-      "cockroft": "Formule de Cockcroft-Gault",
-      "apgar": "Score d'Apgar",
-      "bishop": "Score de Bishop",
-      "phq9": "PHQ-9 - Dépistage de la dépression",
-      "gad7": "GAD-7 - Dépistage de l'anxiété",
-      "das28": "DAS28 - Activité de la polyarthrite",
-      "frax": "FRAX - Risque de fracture",
-      "ipss": "IPSS - Symptômes prostatiques"
-    };
-    return titles[scoreId] || "Score non trouvé";
+  const handleInsert = () => {
+    if (result && onInsertScore) {
+      onInsertScore(result);
+      onClose();
+    }
   };
 
   const renderCheckbox = (name, label) => (
@@ -601,7 +637,11 @@ const ScoreDetail = () => {
     <input type="number" name={name} value={inputs[name] || ''} onChange={handleChange} required placeholder={placeholder} step={step} className="form-input"/>
   );
 
-  const renderFormContent = () => {
+  const getScoreForm = () => {
+    if (!selectedScore) return null;
+    
+    const scoreId = selectedScore.id;
+    
     switch (scoreId) {
         case "imc":
             return (
@@ -1035,22 +1075,105 @@ const ScoreDetail = () => {
         default:
             return <p>Sélectionnez un score pour commencer.</p>;
     }
+  };
+
+  if (selectedScore) {
+    return (
+      <div className="modal-scores-content">
+        <div className="modal-header">
+          <button className="back-button" onClick={() => setSelectedScore(null)}>
+            ← Retour à la liste
+          </button>
+          <h3>{selectedScore.name}</h3>
+          <button className="close-button" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="modal-body">
+          <p className="score-description">{selectedScore.description}</p>
+          
+          <div className="score-form-container">
+            {getScoreForm()}
+          </div>
+          
+          <div className="score-actions">
+            <button className="calculate-button" onClick={calculateScore}>
+              Calculer
+            </button>
+            
+            {result && (
+              <div className="score-result">
+                <h4>Résultat :</h4>
+                <p>{result}</p>
+                <button className="insert-button" onClick={handleInsert}>
+                  Insérer dans la note
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="main-container">
-      <div className="score-detail-container">
-        <h2>{getScoreTitle()}</h2>
-        
-        <form onSubmit={handleSubmit} className="score-form">
-          {renderFormContent()}
-          <button type="submit" className="submit-button">Calculer le Score</button>
-        </form>
+    <div className="modal-scores-content">
+      <div className="modal-header">
+        <h2>Calculateur de Scores</h2>
+        <button className="close-button" onClick={onClose}>×</button>
+      </div>
+      
+      <div className="modal-body">
+        <div className="filter-container">
+          <div className="filter-group">
+            <label>Filtrer par spécialité :</label>
+            <select 
+              className="filter-select"
+              value={selectedSpecialty} 
+              onChange={(e) => setSelectedSpecialty(e.target.value)}
+            >
+              <option value="Tous">Toutes les spécialités</option>
+              {Object.keys(scoresBySpecialty).sort().map(specialty => (
+                <option key={specialty} value={specialty}>{specialty}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="filter-group">
+            <label>Rechercher un score :</label>
+            <input
+              className="filter-input"
+              type="text"
+              placeholder="Nom ou description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
 
-        {result && (
-          <div className="result-box">
-            <h3>Résultat :</h3>
-            <p>{result}</p>
+        <div className="results-count">
+          {filteredScores.length} score(s) trouvé(s)
+        </div>
+
+        <div className="score-grid">
+          {filteredScores
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(score => (
+              <div 
+                key={score.id} 
+                className="score-card"
+                onClick={() => setSelectedScore(score)}
+              >
+                <h3>{score.name}</h3>
+                <p>{score.description}</p>
+                <span className="specialty-badge">{score.specialty}</span>
+              </div>
+            ))
+          }
+        </div>
+
+        {filteredScores.length === 0 && (
+          <div className="no-results-message">
+            Aucun score ne correspond à vos critères de recherche.
           </div>
         )}
       </div>
@@ -1058,4 +1181,4 @@ const ScoreDetail = () => {
   );
 };
 
-export default ScoreDetail;
+export default ModalScores;

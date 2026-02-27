@@ -167,7 +167,7 @@ const AddMedicament = () => {
         </div>
         
         <button type="submit" disabled={isLoading} className="submit-button">
-          {isLoading ? "En cours..." : "Ajouter"}
+          {isLoading ? "En cours..." : "Ajouter le médicament "}
         </button>
       </form>
     </div>

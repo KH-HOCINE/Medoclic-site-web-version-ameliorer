@@ -3,6 +3,8 @@ import { Context } from "../main";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { FaEdit, FaCamera, FaTrash, FaLock, FaSave, FaUserMd } from "react-icons/fa";
+
 
 const Profile = () => {
   const { admin, setAdmin } = useContext(Context);
@@ -138,12 +140,15 @@ const Profile = () => {
                   <div className="photo-with-actions">
                     <img src={profilePhoto} alt="Profil" className="profile-photo-img" />
                     <div className="photo-actions">
-                      <button onClick={removePhoto} className="remove-photo-btn" disabled={isLoading}>       
+                      <button onClick={removePhoto} className="remove-photo-btn" disabled={isLoading}>
+                        <FaTrash />
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="photo-placeholder"><span>👨‍⚕️</span></div>
+                  <div className="photo-placeholder">
+                    <FaUserMd />
+                  </div>
                 )}
               </div>
               <div className="photo-upload-controls">
@@ -155,11 +160,11 @@ const Profile = () => {
                   className="photo-input"
                 />
                 <label htmlFor="profilePhotoInput" className="photo-upload-label">
-                  📷 {profilePhoto ? "Changer la photo" : "Ajouter une photo"}
+                  <FaCamera /> {profilePhoto ? "Changer la photo" : "Ajouter une photo"}
                 </label>
                 {profilePhoto && admin.profilePhoto !== profilePhoto && (
                   <button onClick={updateProfilePhoto} className="save-photo-btn" disabled={isLoading}>
-                    💾 Enregistrer la photo
+                    <FaSave /> Enregistrer la photo
                   </button>
                 )}
                 <p className="photo-help-text">Max 2MB - Format recommandé: carré</p>
@@ -213,7 +218,7 @@ const Profile = () => {
               <h4>Informations modifiables</h4>
               {!isEditing && (
                 <button type="button" className="edit-btn" onClick={() => setIsEditing(true)}>
-                  ✏️ Modifier
+                  <FaEdit /> Modifier
                 </button>
               )}
             </div>
@@ -247,7 +252,7 @@ const Profile = () => {
         <div className="password-section">
           <h4>Sécurité du compte</h4>
           <button className="change-password-btn" onClick={handleChangePassword}>
-            🔒 Modifier votre mot de passe
+            <FaLock /> Modifier votre mot de passe
           </button>
         </div>
       </div>

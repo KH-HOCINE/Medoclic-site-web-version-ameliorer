@@ -230,59 +230,61 @@ const AddPrescription = () => {
   return (
     <div className="form-component">
       {showPreview ? (
-        <div className="certificate-preview">
-          <div className="preview-content">
-            <div className="certificate-body">
-              <div className="doctor-header">
-                <div className="doctor-info">
-                  <div>N°: {admin?.ordreNumber}</div>
-                  <div>Dr. {admin?.firstName} {admin?.lastName}</div>
-                  <div>Spécialité : {admin?.specialite}</div>
-                  <div>{admin?.cabinetAddress}</div>
-                  <div>Tél: {admin?.cabinetPhone}</div>
-                </div>
-                <div className="date-div">
-                  <p>Fait le {currentDate}</p>
-                </div>
-              </div>
-              
-              <div className="patient-data-container">
-                <p className="patient-data">Nom : {selectedPatientData.lastName}</p>
-                <span className="separator">|</span>
-                <p className="patient-data">Prénom : {selectedPatientData.firstName}</p>
-                <span className="separator">|</span>
-                <p className="patient-data">Age : {calculateAge(selectedPatientData.dob)}</p>
-              </div>
-              
-              <h2 className="certificate-title">ORDONNANCE MÉDICALE</h2>
-              
-              <div className="prescription-content">
-                <h3>Médicaments prescrits :</h3>
-                <ul className="medications-list">
-                  {medications.filter(med => med.nomCommercial).map((med, idx) => (
-                    <li key={idx} className="medication-item">
-                      <div className="medication-line-1">
-                        <strong>- {med.nomCommercial} {med.dosage} {med.formePharmaceutique && `(${med.formePharmaceutique})`}</strong>
-                        <span className="qsp-spacer">{med.duree}</span>
-                      </div>
-                      <div className="medication-line-2">
-                        {med.forme && `${med.forme}`}
-                        {med.frequence && ` ${med.frequence}`}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                {notes && (
-                  <div className="prescription-notes">
-                    <h3>Notes :</h3>
-                    <p>{notes}</p>
+        <>
+          <div className="certificate-preview">
+            <div className="preview-content">
+              <div className="certificate-body">
+                <div className="doctor-header">
+                  <div className="doctor-info">
+                    <div>N°: {admin?.ordreNumber}</div>
+                    <div>Dr. {admin?.firstName} {admin?.lastName}</div>
+                    <div>Spécialité : {admin?.specialite}</div>
+                    <div>{admin?.cabinetAddress}</div>
+                    <div>Tél: {admin?.cabinetPhone}</div>
                   </div>
-                )}
+                  <div className="date-div">
+                    <p>Fait le {currentDate}</p>
+                  </div>
+                </div>
+                
+                <div className="patient-data-container">
+                  <p className="patient-data">Nom : {selectedPatientData.lastName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Prénom : {selectedPatientData.firstName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Age : {calculateAge(selectedPatientData.dob)}</p>
+                </div>
+                
+                <h2 className="certificate-title">ORDONNANCE MÉDICALE</h2>
+                
+                <div className="prescription-content">
+                  <h3>Médicaments prescrits :</h3>
+                  <ul className="medications-list">
+                    {medications.filter(med => med.nomCommercial).map((med, idx) => (
+                      <li key={idx} className="medication-item">
+                        <div className="medication-line-1">
+                          <strong>- {med.nomCommercial} {med.dosage} {med.formePharmaceutique && `(${med.formePharmaceutique})`}</strong>
+                          <span className="qsp-spacer">{med.duree}</span>
+                        </div>
+                        <div className="medication-line-2">
+                          {med.forme && `${med.forme}`}
+                          {med.frequence && ` ${med.frequence}`}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
 
-                <div className="signature">
-                  <p>Signature et cachet du médecin</p>
-                  <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                  {notes && (
+                    <div className="prescription-notes">
+                      <h3>Notes :</h3>
+                      <p>{notes}</p>
+                    </div>
+                  )}
+
+                  <div className="signature">
+                    <p>Signature et cachet du médecin</p>
+                    <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -290,18 +292,18 @@ const AddPrescription = () => {
 
           <div className="preview-actions no-print">
             <div className="button-container">
-              <button className="print-button" onClick={() => window.print()}>
+              <button className="action-button" onClick={() => window.print()}>
                 Imprimer
               </button>
-              <button className="edit-button" onClick={() => setShowPreview(false)}>
+              <button className="action-button" onClick={() => setShowPreview(false)}>
                 Modifier
               </button>
-              <button className="submit-button" onClick={handleSave}>
+              <button className="action-button" onClick={handleSave}>
                 Enregistrer
               </button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="prescription-form-container">
           <div className="prescription-image">
@@ -383,7 +385,7 @@ const AddPrescription = () => {
                     <div className="searchable-dropdown">
                       <input
                         type="text"
-                        placeholder="Rechercher un médicament par nom, dosage ou forme..."
+                        placeholder="Nom du médicament"
                         value={medicamentSearchTerms[index] || ''}
                         onChange={(e) => handleMedicamentSearch(index, e.target.value)}
                         onClick={() => {

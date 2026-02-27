@@ -29,6 +29,7 @@ const Lettre = () => {
   const currentDate = new Date().toLocaleDateString('fr-FR');
   const navigate = useNavigate();
 
+  // CORRECTION ICI : utiliser filter() au lieu de find()
   const filteredPatients = patients.filter(p => `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()));
   const selectedPatientData = patients.find(p => p._id === selectedPatient);
 
@@ -46,7 +47,13 @@ const Lettre = () => {
   
   const calculateAge = (dob) => {
     if (!dob) return '';
-    const age = new Date().getFullYear() - new Date(dob).getFullYear();
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
     return age;
   };
 
@@ -109,50 +116,61 @@ const Lettre = () => {
   return (
     <div className="form-component">
       {showPreview ? (
-        <div className="certificate-preview">
-          <div className="preview-content">
-            <div className="doctor-header">
-              <div className="doctor-info">
-                <div>N°: {admin?.ordreNumber}</div>
-                <div>Dr. {admin?.firstName} {admin?.lastName}</div>
-                <div>Spécialité : {admin?.specialite}</div>
-                <div>{admin?.cabinetAddress}</div>
-                <div>Tél: {admin?.cabinetPhone}</div>
-              </div>
-              <div className="date-div">
-                <p>Fait le {currentDate}</p>
-              </div>
-            </div>
-            
-            <div className="patient-data-container">
-              <p className="patient-data">Nom : {selectedPatientData?.lastName}</p>
-              <span className="separator">|</span>
-              <p className="patient-data">Prénom : {selectedPatientData?.firstName}</p>
-              <span className="separator">|</span>
-              <p className="patient-data">Age : {calculateAge(selectedPatientData?.dob)}</p>
-            </div>
+        <>
+          <div className="certificate-preview">
+            <div className="preview-content">
+              <div className="certificate-body">
+                <div className="doctor-header">
+                  <div className="doctor-info">
+                    <div>N°: {admin?.ordreNumber}</div>
+                    <div>Dr. {admin?.firstName} {admin?.lastName}</div>
+                    <div>Spécialité : {admin?.specialite}</div>
+                    <div>{admin?.cabinetAddress}</div>
+                    <div>Tél: {admin?.cabinetPhone}</div>
+                  </div>
+                  <div className="date-div">
+                    <p>Fait le {currentDate}</p>
+                  </div>
+                </div>
+                
+                <div className="patient-data-container">
+                  <p className="patient-data">Nom : {selectedPatientData?.lastName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Prénom : {selectedPatientData?.firstName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Age : {calculateAge(selectedPatientData?.dob)}</p>
+                </div>
 
-            <h2 className="certificate-title">
-              {(letterType === "Autre" ? customLetterTitle : letterType).toUpperCase()}
-            </h2>
+                <h2 className="certificate-title">
+                  {(letterType === "Autre" ? customLetterTitle : letterType).toUpperCase()}
+                </h2>
 
-            <div className="contenu" style={{ whiteSpace: 'pre-wrap' }}>
-                {contentText}
-            </div>
-            
-            <div className="signature">
-              <p>Signature et cachet du médecin</p>
-              <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                <div className="contenu" style={{ whiteSpace: 'pre-wrap' }}>
+                    {contentText}
+                </div>
+                
+                <div className="signature">
+                  <p>Signature et cachet du médecin</p>
+                  <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                </div>
+              </div>
             </div>
           </div>
+
           <div className="preview-actions no-print">
             <div className="button-container">
-              <button className="print-button" onClick={() => window.print()}>Imprimer</button>
-              <button className="edit-button" onClick={() => setShowPreview(false)}>Modifier</button>
-              <button className="submit-button" onClick={handleSave}>Enregistrer</button>
+              <button className="action-button" onClick={() => window.print()}>
+                Imprimer
+              </button>
+              <button className="action-button" onClick={() => setShowPreview(false)}>
+                Modifier
+              </button>
+              <button className="action-button" onClick={handleSave}>
+                Enregistrer
+              </button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="form-container">
           <div className="form-image">

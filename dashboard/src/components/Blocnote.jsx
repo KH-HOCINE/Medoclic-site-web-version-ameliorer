@@ -2,7 +2,13 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Context } from "../main";
 import axios from "axios";
-import { FaMicrophone, FaMicrophoneSlash, FaNotesMedical } from 'react-icons/fa';
+import { 
+  FaMicrophone, 
+  FaMicrophoneSlash, 
+  FaNotesMedical,
+  FaCalculator 
+} from 'react-icons/fa';
+import ModalScores from './ModalScores';
 import "../App.css";
 
 const Blocnote = () => {
@@ -15,6 +21,8 @@ const Blocnote = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  
   const textareaRef = useRef(null);
   const currentDate = new Date().toLocaleDateString('fr-FR');
   const navigate = useNavigate();
@@ -145,65 +153,103 @@ const Blocnote = () => {
     return age;
   };
 
+  const insertScoreResult = (scoreResult) => {
+    if (scoreResult) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newText = noteText.substring(0, start) + 
+                       scoreResult + "\n" + 
+                       noteText.substring(end);
+        setNoteText(newText);
+        
+        setShowScoreModal(false);
+        
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(
+            start + scoreResult.length + 1,
+            start + scoreResult.length + 1
+          );
+        }, 0);
+      }
+    }
+  };
+
   return (
     <div className="form-component">
+      {/* Modal pour les scores - CORRECTION APPLIQUÉE ICI */}
+      {showScoreModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <ModalScores 
+              onInsertScore={insertScoreResult}
+              onClose={() => setShowScoreModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {showPreview ? (
-        <div className="certificate-preview">
-          <div className="preview-content">
-            <div className="certificate-body">
-              <div className="doctor-header">
-                <div className="doctor-info">
-                  <div>N°: {admin?.ordreNumber}</div>
-                  <div>Dr. {admin?.firstName} {admin?.lastName}</div>
-                  <div>Spécialité : {admin?.specialite}</div>
-                  <div>{admin?.cabinetAddress}</div>
-                  <div>Tél: {admin?.cabinetPhone}</div>
+        <>
+          <div className="certificate-preview">
+            <div className="preview-content">
+              <div className="certificate-body">
+                <div className="doctor-header">
+                  <div className="doctor-info">
+                    <div>N°: {admin?.ordreNumber}</div>
+                    <div>Dr. {admin?.firstName} {admin?.lastName}</div>
+                    <div>Spécialité : {admin?.specialite}</div>
+                    <div>{admin?.cabinetAddress}</div>
+                    <div>Tél: {admin?.cabinetPhone}</div>
+                  </div>
+                  
+                  <div className="date-div">
+                    <p>Le {currentDate}</p>
+                  </div>
                 </div>
                 
-                <div className="date-div">
-                  <p>Le {currentDate}</p>
+                <div className="patient-data-container">
+                  <p className="patient-data">Nom : {selectedPatientData.lastName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Prénom : {selectedPatientData.firstName}</p>
+                  <span className="separator">|</span>
+                  <p className="patient-data">Age : {calculateAge(selectedPatientData.dob)}</p>
                 </div>
-              </div>
-              
-              <div className="patient-data-container">
-                <p className="patient-data">Nom : {selectedPatientData.lastName}</p>
-                <span className="separator">|</span>
-                <p className="patient-data">Prénom : {selectedPatientData.firstName}</p>
-                <span className="separator">|</span>
-                <p className="patient-data">Age : {calculateAge(selectedPatientData.dob)}</p>
-              </div>
 
-              <h2 className="certificate-title">Examen clinique du jour </h2>
+                <h2 className="certificate-title">Examen clinique du jour </h2>
 
-              <div className="note-content">
-                <div className="note-text">
-                  {noteText.split('\n').map((line, index) => (
-                    <p key={index}>{line}</p>
-                  ))}
+                <div className="note-content">
+                  <div className="note-text">
+                    {noteText.split('\n').map((line, index) => (
+                      <p key={index}>{line}</p>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              
-              <div className="signature">
-                <p>Signature et cachet du médecin</p>
-                <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                
+                <div className="signature">
+                  <p>Signature et cachet du médecin</p>
+                  <p>Dr {admin?.firstName} {admin?.lastName}</p>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="preview-actions no-print">
             <div className="button-container">
-              <button className="print-button" onClick={() => window.print()}>
+              <button className="action-button" onClick={() => window.print()}>
                 Imprimer
               </button>
-              <button className="edit-button" onClick={() => setShowPreview(false)}>
+              <button className="action-button" onClick={() => setShowPreview(false)}>
                 Modifier
               </button>
-              <button className="submit-button" onClick={handleSave}>
+              <button className="action-button" onClick={handleSave}>
                 Enregistrer
               </button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="blocnote-container">
           {/* Colonne gauche - Image */}
@@ -295,11 +341,21 @@ const Blocnote = () => {
                     ref={textareaRef}
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Saisissez votre note médicale ici... Vous pouvez aussi utiliser la reconnaissance vocale."
+                    placeholder="Saisissez votre note médicale ici... Vous pouvez aussi utiliser la reconnaissance vocale ou insérer des scores."
                     rows="8"
                     className="note-textarea"
                   />
                   <div className="voice-controls">
+                    <button
+                      type="button"
+                      className="score-button"
+                      onClick={() => setShowScoreModal(true)}
+                      title="Ouvrir le calculateur de scores"
+                    >
+                      <FaCalculator />
+                      Scores
+                    </button>
+                    
                     {recognition && (
                       <button
                         type="button"

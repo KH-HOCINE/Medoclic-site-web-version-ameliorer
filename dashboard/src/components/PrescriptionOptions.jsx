@@ -21,23 +21,18 @@ const PrescriptionOptions = () => {
       label: "Justification", 
       action: () => navigate("/justification") 
     },
-
-     { 
+    { 
       label: "Lettres", 
       action: () => navigate("/lettre") 
     },
-
-     { 
-      label: "Fiche de suivi ", 
+    { 
+      label: "Fiche de suivi", 
       action: () => navigate("/blocnote") 
     }
-
-     
-
   ];
 
   return (
-    <div className="form-component">
+    <div className="form-component prescription-options-page">
       <h2 className="form-title">Types de prescriptions</h2>
       <div className="prescription-options">
         {options.map((option, index) => (

@@ -49,8 +49,8 @@ const Sidebar = () => {
     { icon: <AiFillCalendar />, label: "RDV", action: () => navigateTo("/calendar") },
     { icon: <FaNotesMedical />, label: "Fiche de suivi", action: () => navigateTo("/blocnote") },
     { icon: <IoStatsChart />, label: "Statistiques", action: () => navigateTo("/statistiques") },
-    { icon: <FaPills />, label: "Ajouter Médicament", action: () => navigateTo("/add-medicament") },
-    { icon: <FiSettings />, label: "Gerer mon profil", action: () => navigateTo("/profile") },
+    { icon: <FaPills />, label: "Gérer les Médicaments", action: () => navigateTo("/liste-medicaments") },
+    { icon: <FiSettings />, label: "Gérer mon profil", action: () => navigateTo("/profile") },
     { icon: <FaNotesMedical />, label: "Scores médicaux", action: () => navigateTo("/scores") },
     // NOUVEAU : Item corbeille
     { icon: <FaTrash />, label: "Corbeille", action: () => navigateTo("/corbeille") },

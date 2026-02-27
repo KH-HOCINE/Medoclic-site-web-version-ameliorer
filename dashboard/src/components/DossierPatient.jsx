@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Modal from "react-modal";
+import { FaTrashAlt, FaTimes, FaEdit, FaFilePdf, FaFileImage, FaChevronLeft, FaChevronRight, FaCheckCircle, FaPlus } from "react-icons/fa";
+
 import "../App.css";
 
 Modal.setAppElement("#root");
@@ -50,6 +52,11 @@ const DossierPatient = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("all");
+  const [currentDocIndexByDate, setCurrentDocIndexByDate] = useState({});
+  
+  // NOUVEAU : États pour le mode suppression
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedDocuments, setSelectedDocuments] = useState([]);
 
   useEffect(() => {
     const fetchPatientDetails = async () => {
@@ -66,41 +73,75 @@ const DossierPatient = () => {
     fetchPatientDetails();
   }, [id]);
   
-  // =================================================================
-  // NOUVELLE FONCTION : Pour supprimer les documents (ordonnance, bilan, etc.)
-  // =================================================================
-  const handleDeleteItem = async (itemType, itemId) => {
-    // Adapter le nom pour la route (le cas de 'arret' devient 'certificat')
-    const routeType = itemType === 'arret' ? 'certificat' : itemType;
-    const typeLabel = {
-      prescription: "l'ordonnance",
-      bilan: "le bilan",
-      arret: "le certificat",
-      justification: "la justification",
-      lettre: "la lettre",
-      note: "la note"
-    };
+  // Fonction pour naviguer entre les documents d'une même date
+  const handlePrevDocument = (date, totalDocs) => {
+    setCurrentDocIndexByDate(prev => ({
+      ...prev,
+      [date]: ((prev[date] || 0) - 1 + totalDocs) % totalDocs
+    }));
+  };
 
-    // Demander une confirmation à l'utilisateur avant de supprimer
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${typeLabel[itemType] || 'ce document'} ? Cette action est irréversible.`)) {
-        return;
+  const handleNextDocument = (date, totalDocs) => {
+    setCurrentDocIndexByDate(prev => ({
+      ...prev,
+      [date]: ((prev[date] || 0) + 1) % totalDocs
+    }));
+  };
+
+  // NOUVEAU : Activer/désactiver le mode suppression
+  const toggleDeleteMode = () => {
+    setDeleteMode(!deleteMode);
+    setSelectedDocuments([]); // Réinitialiser la sélection
+  };
+
+  // NOUVEAU : Sélectionner/désélectionner un document
+  const toggleDocumentSelection = (docId, docType) => {
+    const docKey = `${docType}-${docId}`;
+    setSelectedDocuments(prev => {
+      if (prev.includes(docKey)) {
+        return prev.filter(key => key !== docKey);
+      } else {
+        return [...prev, docKey];
+      }
+    });
+  };
+
+  // NOUVEAU : Supprimer les documents sélectionnés
+  const handleDeleteSelected = async () => {
+    if (selectedDocuments.length === 0) {
+      alert("Aucun document sélectionné !");
+      return;
+    }
+
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedDocuments.length} document(s) ? Cette action est irréversible.`)) {
+      return;
     }
 
     try {
-        const url = `${import.meta.env.VITE_REACT_APP_API_URL}/api/v1/patient/${id}/${routeType}/${itemId}`;
-        const response = await axios.delete(url, { withCredentials: true });
-        // Mettre à jour l'état du patient avec les données retournées par le serveur
-        setPatient(response.data.patient);
-        alert(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} supprimé(e) avec succès !`);
+      // Supprimer chaque document sélectionné
+      for (const docKey of selectedDocuments) {
+        const [docType, docId] = docKey.split('-');
+        const routeType = docType === 'arret' ? 'certificat' : docType;
+        const url = `${import.meta.env.VITE_REACT_APP_API_URL}/api/v1/patient/${id}/${routeType}/${docId}`;
+        await axios.delete(url, { withCredentials: true });
+      }
+
+      // Recharger les données du patient
+      const response = await axios.get(`${import.meta.env.VITE_REACT_APP_API_URL}/api/v1/patient/${id}`, {
+        withCredentials: true,
+      });
+      setPatient(response.data);
+      
+      alert(`${selectedDocuments.length} document(s) supprimé(s) avec succès !`);
+      setSelectedDocuments([]);
+      setDeleteMode(false);
     } catch (error) {
-        console.error(`Erreur lors de la suppression de ${itemType}:`, error);
-        alert(`Échec de la suppression. Erreur: ${error.response?.data?.message || error.message}`);
+      console.error("Erreur lors de la suppression :", error);
+      alert(`Échec de la suppression. Erreur: ${error.response?.data?.message || error.message}`);
     }
   };
 
-  // =================================================================
-  // NOUVELLE FONCTION : Pour supprimer un fichier médical spécifique
-  // =================================================================
+  // Fonction pour supprimer un fichier médical
   const handleDeleteMedicalFile = async (fileIndex) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce fichier médical ? Cette action est irréversible.")) {
         return;
@@ -108,7 +149,6 @@ const DossierPatient = () => {
     try {
         const url = `${import.meta.env.VITE_REACT_APP_API_URL}/api/v1/patient/${id}/medical-file/${fileIndex}`;
         const response = await axios.delete(url, { withCredentials: true });
-        // Mettre à jour l'état du patient avec les données retournées par le serveur
         setPatient(response.data.patient);
         alert("Fichier médical supprimé avec succès !");
     } catch (error) {
@@ -116,7 +156,6 @@ const DossierPatient = () => {
         alert(`Échec de la suppression. Erreur: ${error.response?.data?.message || error.message}`);
     }
   };
-
 
   const handleFileUpload = async (event) => {
     const files = event.target.files;
@@ -185,58 +224,78 @@ const DossierPatient = () => {
   };
 
   const renderDocument = (doc) => {
-    // La classe 'document-card' est ajoutée pour un style commun
-    // Le bouton de suppression est ajouté à chaque type de document
+    const docKey = `${doc.type}-${doc._id}`;
+    const isSelected = selectedDocuments.includes(docKey);
+    
+    // NOUVEAU : Fonction pour gérer le clic sur la carte en mode suppression
+    const handleCardClick = () => {
+      if (deleteMode) {
+        toggleDocumentSelection(doc._id, doc.type);
+      }
+    };
+
+    const cardClassName = `${doc.type === "prescription" ? "prescription-card" : 
+                            doc.type === "bilan" ? "bilan-card" : 
+                            doc.type === "arret" ? "arret-card" :
+                            doc.type === "lettre" ? "note-card" :
+                            doc.type === "justification" ? "justification-card" : "note-card"} 
+                            document-card 
+                            ${deleteMode ? 'delete-mode' : ''} 
+                            ${isSelected ? 'selected' : ''}`;
+
     switch (doc.type) {
       
       case "prescription":
-  return (
-    <div className="prescription-card document-card" key={doc._id}>
-      <div className="card-actions">
-        <button className="delete-button" onClick={() => handleDeleteItem(doc.type, doc._id)}>🗑️ Supprimer</button>
-      </div>
-      <div className="prescription-header">
-        <div className="doctor-info-small">
-          <p><strong>Médecin :</strong> {doc.doctorName}</p>
-          <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
-          <p><strong>N° Ordre :</strong> {doc.doctor?.ordreNumber || "Non renseigné"}</p>
-          <p><strong>Adresse :</strong> {doc.doctor?.cabinetAddress || "Non renseigné"}</p>
-        </div>
-        <div className="patient-data-container">
-          <p className="patient-data">Nom : {patient.lastName}</p>
-          <span className="separator">|</span>
-          <p className="patient-data">Prénom : {patient.firstName}</p>
-          <span className="separator">|</span>
-          <p className="patient-data">Age : {calculateAge(patient.dob)}</p>
-        </div>
-        <div className="document-date">
-          <p><strong>Le :</strong> {new Date(doc.date).toLocaleDateString('fr-FR')}</p>
-        </div>
-        <strong className="titre">ORDONNANCE</strong>
-      </div>
-      
-      {doc.notes && <p><strong>Notes :</strong> {doc.notes}</p>}
-      <h4>Médicaments :</h4>
-      <ul>
-        {doc.medications.map((med, idx) => (
-          <li key={idx} className="medication-item">
-            <div className="medication-line-1">
-              <strong>- {med.nomCommercial} {med.dosage}</strong>
-              <span className="qsp-spacer">{med.duree}</span>
+        return (
+          <div className={cardClassName} key={doc._id} onClick={handleCardClick}>
+            {deleteMode && (
+              <div className="selection-checkbox">
+                {isSelected && <FaCheckCircle />}
+              </div>
+            )}
+            <div className="prescription-header">
+              <div className="doctor-info-small">
+                <p><strong>Médecin :</strong> {doc.doctorName}</p>
+                <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
+                <p><strong>N° Ordre :</strong> {doc.doctor?.ordreNumber || "Non renseigné"}</p>
+                <p><strong>Adresse :</strong> {doc.doctor?.cabinetAddress || "Non renseigné"}</p>
+              </div>
+              <div className="patient-data-container">
+                <p className="patient-data">Nom : {patient.lastName}</p>
+                <span className="separator">|</span>
+                <p className="patient-data">Prénom : {patient.firstName}</p>
+                <span className="separator">|</span>
+                <p className="patient-data">Age : {calculateAge(patient.dob)}</p>
+              </div>
+              <div className="document-date">
+                <p><strong>Le :</strong> {new Date(doc.date).toLocaleDateString('fr-FR')}</p>
+              </div>
+              <strong className="titre">ORDONNANCE</strong>
             </div>
-            <div className="medication-line-2">
-              {med.forme && `${med.forme}`}
-              {med.frequence && ` ${med.frequence}`}
+            
+            {doc.notes && <p><strong>Notes :</strong> {doc.notes}</p>}
+            <h4>Médicaments :</h4>
+            <ul>
+              {doc.medications.map((med, idx) => (
+                <li key={idx} className="medication-item">
+                  <div className="medication-line-1">
+                    <strong>- {med.nomCommercial} {med.dosage}</strong>
+                    <span className="qsp-spacer">{med.duree}</span>
+                  </div>
+                  <div className="medication-line-2">
+                    {med.forme && `${med.forme}`}
+                    {med.frequence && ` ${med.frequence}`}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="signature">
+              <p>Signature et cachet du médecin</p>
+              <p> {doc.doctorName} </p>
             </div>
-          </li>
-        ))}
-      </ul>
-      <div className="signature">
-        <p>Signature et cachet du médecin</p>
-        <p> {doc.doctorName} </p>
-      </div>
-    </div>
-  );
+          </div>
+        );
+
       case "bilan":
         const predefinedTests = Object.entries(doc.tests || {})
             .filter(([_, isChecked]) => isChecked)
@@ -248,10 +307,12 @@ const DossierPatient = () => {
         ];
 
         return (
-            <div className="bilan-card document-card" key={doc._id}>
-                <div className="card-actions">
-                    <button className="delete-button" onClick={() => handleDeleteItem(doc.type, doc._id)}>🗑️ Supprimer</button>
-                </div>
+            <div className={cardClassName} key={doc._id} onClick={handleCardClick}>
+                {deleteMode && (
+                  <div className="selection-checkbox">
+                    {isSelected && <FaCheckCircle />}
+                  </div>
+                )}
                 <div className="doctor-info-small">
                     <p><strong>Médecin :</strong> {doc.doctorName}</p>
                     <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
@@ -288,10 +349,12 @@ const DossierPatient = () => {
 
       case "arret":
         return (
-          <div className="arret-card document-card" key={doc._id}>
-            <div className="card-actions">
-                <button className="delete-button" onClick={() => handleDeleteItem(doc.type, doc._id)}>🗑️ Supprimer</button>
-            </div>
+          <div className={cardClassName} key={doc._id} onClick={handleCardClick}>
+            {deleteMode && (
+              <div className="selection-checkbox">
+                {isSelected && <FaCheckCircle />}
+              </div>
+            )}
             <div className="doctor-info-small">
               <p><strong>Médecin :</strong> {doc.doctorName}</p>
               <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
@@ -339,10 +402,12 @@ const DossierPatient = () => {
 
       case "lettre":
         return (
-          <div className="note-card document-card" key={doc._id}>
-            <div className="card-actions">
-                <button className="delete-button" onClick={() => handleDeleteItem(doc.type, doc._id)}>🗑️ Supprimer</button>
-            </div>
+          <div className={cardClassName} key={doc._id} onClick={handleCardClick}>
+            {deleteMode && (
+              <div className="selection-checkbox">
+                {isSelected && <FaCheckCircle />}
+              </div>
+            )}
             <div className="doctor-info-small">
               <p><strong>Médecin :</strong> {doc.doctorName}</p>
               <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
@@ -377,10 +442,12 @@ const DossierPatient = () => {
 
       case "justification":
         return (
-          <div className="justification-card document-card" key={doc._id}>
-             <div className="card-actions">
-                <button className="delete-button" onClick={() => handleDeleteItem(doc.type, doc._id)}>🗑️ Supprimer</button>
-            </div>
+          <div className={cardClassName} key={doc._id} onClick={handleCardClick}>
+            {deleteMode && (
+              <div className="selection-checkbox">
+                {isSelected && <FaCheckCircle />}
+              </div>
+            )}
             <div className="doctor-info-small">
               <p><strong>Médecin :</strong> {doc.doctorName}</p>
               <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
@@ -412,10 +479,12 @@ const DossierPatient = () => {
 
       case "note":
         return (
-          <div className="note-card document-card" key={doc._id}>
-             <div className="card-actions">
-                <button className="delete-button" onClick={() => handleDeleteItem(doc.type, doc._id)}>🗑️ Supprimer</button>
-            </div>
+          <div className={cardClassName} key={doc._id} onClick={handleCardClick}>
+            {deleteMode && (
+              <div className="selection-checkbox">
+                {isSelected && <FaCheckCircle />}
+              </div>
+            )}
             <div className="doctor-info-small">
               <p><strong>Médecin :</strong> {doc.doctorName}</p>
               <p><strong>Téléphone :</strong> {doc.doctor?.cabinetPhone || "Non renseigné"}</p>
@@ -460,7 +529,6 @@ const DossierPatient = () => {
   const groupedDocs = getGroupedDocuments();
   const dates = Object.keys(groupedDocs).sort((a, b) => new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-')));
 
-
   return (
     <div className={`dossier-container ${isModalOpen ? 'modal-open' : ''}`}>
       <div className="patient-info">
@@ -479,7 +547,7 @@ const DossierPatient = () => {
           onClick={handleEditPatient}
           className="edit-patient-button"
         >
-          ✏️ Modifier les informations
+           <FaEdit /> Modifier les informations
         </button>
         
         <p><strong>Numéro patient:</strong> {patient.patientNumber}</p>
@@ -497,11 +565,41 @@ const DossierPatient = () => {
         <p><strong>Adresse:</strong> {patient.address}</p>
         <p><strong>Email :</strong> {patient.email}</p>
       </div>
-      
-      <div className="file-upload">
-        <label htmlFor="fileInput">Ajouter fichiers médicaux :</label>
-        <input type="file" id="fileInput" multiple onChange={handleFileUpload} />
-      </div>
+
+      {/* NOUVEAU : Bouton de gestion de suppression - Affiché uniquement s'il y a des documents */}
+      {dates.length > 0 && (
+        <div className="delete-documents-section">
+          <button 
+            onClick={toggleDeleteMode} 
+            className={`toggle-delete-mode-button ${deleteMode ? 'active' : ''}`}
+          >
+            {deleteMode ? (
+              <>
+                <FaTimes /> Annuler
+              </>
+            ) : (
+              <>
+                <FaTrashAlt /> Supprimer des documents
+              </>
+            )}
+          </button>
+
+          {deleteMode && (
+            <div className="delete-mode-actions">
+              <p className="selection-info">
+                {selectedDocuments.length} document(s) sélectionné(s)
+              </p>
+              <button 
+                onClick={handleDeleteSelected}
+                className="confirm-delete-button"
+                disabled={selectedDocuments.length === 0}
+              >
+                <FaTrashAlt /> Supprimer la sélection
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="date-filter">
         <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="date-select">
@@ -516,30 +614,93 @@ const DossierPatient = () => {
         {dates.map(date => {
           if (selectedDate !== "all" && date !== selectedDate) return null;
 
+          const docsForDate = groupedDocs[date];
+          const totalDocs = docsForDate.length;
+          const currentIndex = currentDocIndexByDate[date] || 0;
+          const currentDoc = docsForDate[currentIndex];
+
           return (
             <div key={date} className="date-group">
               <h3 className="group-date">{date}</h3>
-              <div className="documents-list">
-                {groupedDocs[date].map(doc => renderDocument(doc))}
-              </div>
+              
+              {/* Mode suppression : afficher tous les documents */}
+              {deleteMode ? (
+                <div className="documents-grid-delete-mode">
+                  {docsForDate.map(doc => (
+                    <div key={doc._id}>
+                      {renderDocument(doc)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Mode normal : afficher le carousel */
+                <>
+                  <div className="documents-carousel-container">
+                    {totalDocs > 1 && (
+                      <button 
+                        className="carousel-nav-button prev-button"
+                        onClick={() => handlePrevDocument(date, totalDocs)}
+                        aria-label="Document précédent"
+                      >
+                        <FaChevronLeft />
+                      </button>
+                    )}
+                    
+                    <div className="documents-carousel">
+                      {renderDocument(currentDoc)}
+                    </div>
+                    
+                    {totalDocs > 1 && (
+                      <button 
+                        className="carousel-nav-button next-button"
+                        onClick={() => handleNextDocument(date, totalDocs)}
+                        aria-label="Document suivant"
+                      >
+                        <FaChevronRight />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {totalDocs > 1 && (
+                    <div className="carousel-indicators">
+                      {docsForDate.map((_, idx) => (
+                        <span 
+                          key={idx} 
+                          className={`indicator ${idx === currentIndex ? 'active' : ''}`}
+                          onClick={() => setCurrentDocIndexByDate(prev => ({ ...prev, [date]: idx }))}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           );
         })}
       </div>
       
-      {/* ============================================== */}
-      {/* MODIFICATION : Ajout du bouton supprimer pour les fichiers médicaux */}
-      {/* ============================================== */}
       {patient.medicalFiles && patient.medicalFiles.length > 0 && (
         <div className="medical-files-section">
-          <h3>Fichiers Médicaux</h3>
+          <div className="medical-files-header">
+            <h3>Fichiers Médicaux</h3>
+            <label htmlFor="fileInput" className="add-files-button">
+              <FaPlus /> Ajouter des fichiers
+            </label>
+            <input 
+              type="file" 
+              id="fileInput" 
+              multiple 
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+          </div>
           <div className="medical-files-list">
             {patient.medicalFiles.map((file, idx) => (
               <div key={idx} className="file-preview-container">
                 <div className="file-preview" onClick={() => handleFileClick(file.url)}>
                   {file.url.startsWith("data:application/pdf") ? (
                     <div className="pdf-icon">
-                      📄 PDF
+                      <FaFilePdf/> PDF
                       <p className="file-date">
                         {new Date(file.addedDate).toLocaleDateString('fr-FR')}
                       </p>
@@ -553,19 +714,19 @@ const DossierPatient = () => {
                     </div>
                   )}
                 </div>
-                {/* Le bouton pour appeler la fonction de suppression */}
                 <button 
                   className="delete-file-button"
                   onClick={() => handleDeleteMedicalFile(idx)}
                   title="Supprimer ce fichier"
                 >
-                    🗑️
+                    <FaTrashAlt /> 
                 </button>
               </div>
             ))}
           </div>
         </div>
       )}
+
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
@@ -595,7 +756,7 @@ const DossierPatient = () => {
               onClick={() => setIsModalOpen(false)} 
               className="close-modal"
             >
-              ✕ Fermer
+              <FaTimes />
             </button>
           </>
         )}
